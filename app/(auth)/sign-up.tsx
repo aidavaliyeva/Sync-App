@@ -13,7 +13,10 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { supabase } from '../../lib/supabase';
+import { handleAuthCallbackUrl } from '../../lib/auth';
 import { ScreenBackground } from '../../components/ScreenBackground';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { Button } from '../../components/ui/Button';
@@ -35,12 +38,6 @@ export default function SignUpScreen() {
   const [alreadyRegistered, setAlreadyRegistered] = useState(false);
   const [passwordError, setPasswordError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [comingSoon, setComingSoon] = useState('');
-
-  const showComingSoon = (msg: string) => {
-    setComingSoon(msg);
-    setTimeout(() => setComingSoon(''), 2500);
-  };
 
   const validate = () => {
     let ok = true;
@@ -62,7 +59,7 @@ export default function SignUpScreen() {
       email: email.trim(),
       password,
       options: {
-        emailRedirectTo: Linking.createURL('/'),
+        emailRedirectTo: 'sync://auth-callback',
       },
     });
     setLoading(false);
@@ -82,10 +79,37 @@ export default function SignUpScreen() {
     });
   };
 
-  const handleOAuth = (provider: 'google' | 'apple') => {
-    showComingSoon(
-      provider === 'google' ? 'Google sign-in coming soon' : 'Apple sign-in coming soon'
-    );
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    const redirectUrl = Linking.createURL('auth-callback');
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: redirectUrl, skipBrowserRedirect: true },
+    });
+    if (error || !data?.url) { setLoading(false); return; }
+    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
+    if (result.type === 'success' && result.url) {
+      await handleAuthCallbackUrl(result.url);
+    }
+    setLoading(false);
+  };
+
+  const handleAppleSignIn = async () => {
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+      if (credential.identityToken) {
+        setLoading(true);
+        await supabase.auth.signInWithIdToken({ provider: 'apple', token: credential.identityToken });
+        setLoading(false);
+      }
+    } catch {
+      // User cancelled or Apple Sign-In unavailable
+    }
   };
 
   const canSubmit = isValidEmail(email) && password.length >= 8;
@@ -211,7 +235,7 @@ export default function SignUpScreen() {
 
           <TouchableOpacity
             style={styles.socialBtn}
-            onPress={() => handleOAuth('google')}
+            onPress={handleGoogleSignIn}
             activeOpacity={0.7}
           >
             <Feather name="globe" size={18} color={Colors.text.body} />
@@ -220,7 +244,7 @@ export default function SignUpScreen() {
 
           <TouchableOpacity
             style={[styles.socialBtn, { marginTop: 10 }]}
-            onPress={() => handleOAuth('apple')}
+            onPress={handleAppleSignIn}
             activeOpacity={0.7}
           >
             <Feather name="smartphone" size={18} color={Colors.text.body} />
@@ -236,12 +260,6 @@ export default function SignUpScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Coming-soon toast */}
-      {comingSoon ? (
-        <View style={styles.toast} pointerEvents="none">
-          <Text style={styles.toastText}>{comingSoon}</Text>
-        </View>
-      ) : null}
     </ScreenBackground>
   );
 }
@@ -327,16 +345,4 @@ const styles = StyleSheet.create({
   },
   bottomText: { fontSize: 13, color: Colors.text.label },
   bottomLink: { fontSize: 13, color: Colors.teal.bright, fontWeight: '500' },
-  toast: {
-    position: 'absolute',
-    bottom: 48,
-    alignSelf: 'center',
-    backgroundColor: 'rgba(30,30,40,0.95)',
-    borderWidth: 0.5,
-    borderColor: 'rgba(255,255,255,0.12)',
-    borderRadius: 20,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-  },
-  toastText: { fontSize: 13, color: Colors.text.body, fontWeight: '500' },
 });

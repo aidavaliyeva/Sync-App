@@ -4,7 +4,7 @@
     "slug": "sync-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/icon2.png",
     "userInterfaceStyle": "dark",
     "scheme": "sync",
     "newArchEnabled": true,
@@ -16,7 +16,14 @@
     "backgroundColor": "#0A0A0F",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.sync.app"
+      "bundleIdentifier": "com.aidavaliyeva.syncapp",
+      "infoPlist": {
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": ["sync"]
+          }
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -24,7 +31,10 @@
         "backgroundColor": "#0A0A0F"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.sync.app"
+      "package": "com.aidavaliyeva.syncapp",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -32,13 +42,21 @@
     },
     "plugins": [
       "expo-router",
-      "expo-notifications",
+      "expo-dev-client",
       [
         "expo-image-picker",
         {
           "photosPermission": "Allow Sync to access your photos to set a profile picture."
         }
-      ]
-    ]
+      ],
+      "expo-web-browser",
+      "expo-apple-authentication"
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "fb924585-85e1-474a-a528-3ac64f951f79"
+      }
+    }
   }
 }

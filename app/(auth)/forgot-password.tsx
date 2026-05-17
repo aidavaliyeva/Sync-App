@@ -36,7 +36,9 @@ export default function ForgotPasswordScreen() {
       return;
     }
     setLoading(true);
-    await supabase.auth.resetPasswordForEmail(email.trim());
+    await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: 'sync://auth-callback',
+    });
     setLoading(false);
     setSent(true);
   };
