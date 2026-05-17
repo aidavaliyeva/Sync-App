@@ -77,7 +77,7 @@ export default function RootLayout() {
   }, []);
 
   // Process deep-link tokens directly — Expo Router can't mount auth-callback.tsx
-  // before the routing guard fires (no persisted session → isLoading goes false → redirect to login).
+  // before the routing guard fires (no persisted session → isLoading goes false → redirect to welcome).
   // By handling the URL here we can call setSession() and navigate to new-password
   // while the inNewPassword guard holds the routing guard back.
   useEffect(() => {

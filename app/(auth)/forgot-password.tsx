@@ -56,7 +56,7 @@ export default function ForgotPasswordScreen() {
           ]}
         >
           <TouchableOpacity
-            onPress={() => router.back()}
+            onPress={() => router.replace('/(auth)/login')}
             style={styles.backBtn}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
